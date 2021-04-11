@@ -1,0 +1,108 @@
+int red_12 = 13; //traffic stoplights
+int red_3 = 11; //operator signal
+int green_12 = 9; //traffic stoplights
+int green_3 = 7; //operator signal
+int pirPin_1 = 5; //right side of bridge
+int pirPin_2 = 4; //traffic
+int pirPin_3 = 3; //left side of bridge
+int pirStat_1 = 0;
+int pirStat_2 = 0;
+int pirStat_3 = 0;
+int high = 255;
+int low = 0;
+int btnPin = 2;
+int btnVal = 0;
+
+void setup() {
+  pinMode(red_12, OUTPUT);
+  pinMode(red_3, OUTPUT);
+  pinMode(green_12, OUTPUT);
+  pinMode(green_3, OUTPUT);   
+  pinMode(pirPin_1, INPUT);
+  pinMode(pirPin_2, INPUT);
+  pinMode(pirPin_3, INPUT);
+  Serial.begin(9600);
+}
+
+void loop()
+{
+  //Reading new values from the PIR sensors
+  pirStat_1 = digitalRead(pirPin_1);
+  pirStat_2 = digitalRead(pirPin_2);
+  pirStat_3 = digitalRead(pirPin_3);
+  
+  if(pirStat_1 == 1 || pirStat_3 == 1)//If the left or right PIR sensors detects an incoming ship
+  {
+    if(pirStat_1 == 1)//If a ship is incoming from the left and outgoing on the right
+    {
+      pirStat_1 = 1;
+      pirStat_2 = 0;
+      pirStat_3 = 0;
+      while(pirStat_3 == 0)//While ship is still passing under the bridge
+      {
+ 		pirStat_2 = digitalRead(pirPin_2);
+  		pirStat_3 = digitalRead(pirPin_3);
+        analogWrite(red_12, high);//Traffic lights turn red
+        analogWrite(green_12, low);
+        if(pirStat_2 == 1) //The traffic is still on the bridge
+        {
+          analogWrite(red_3, high);
+          analogWrite(green_3, high);
+        }
+        else if(pirStat_2 == 0)//The traffic has stopped and the operator can raise the bridge
+        {
+          analogWrite(red_3, low);
+          analogWrite(green_3, high);
+        }
+      }
+      pirStat_1 = 0;
+      pirStat_2 = 0;
+      pirStat_3 = 0;
+      analogWrite(red_3, high);//The operator is signaled to lower the bridge
+      analogWrite(green_3, low);
+      while(btnVal == 0) //Waiting for operator permission for program to signals to resume default
+      {
+        btnVal = digitalRead(btnPin);
+      }
+    }
+    else //If the ship is incoming from the right and outgoing on the left
+    {
+      pirStat_1 = 0;
+      pirStat_2 = 0;
+      pirStat_3 = 1;
+      while(pirStat_1 == 0)//While ship is still passing under the bridge
+      {
+        pirStat_1 = digitalRead(pirPin_1);
+  		pirStat_2 = digitalRead(pirPin_2);
+        analogWrite(red_12, high);//Traffic Lights turn red
+        analogWrite(green_12, low);
+        if(pirStat_2 == 1)//Traffic is still detected on the bridge
+        {
+          analogWrite(red_3, high);
+          analogWrite(green_3, high);
+        }
+        else if(pirStat_2 == 0)//Traffic has stopped and the operator can raise the bridge
+        {
+          analogWrite(red_3, low);
+          analogWrite(green_3, high);
+        }
+      }
+      pirStat_1 = 0;
+      pirStat_2 = 0;
+      pirStat_3 = 0;
+      analogWrite(red_3, high);//Operator is signaled to lower bridge again
+      analogWrite(green_3, low);
+      while(btnVal == 0)//Waiting for operator permission for program to continue
+      {
+        btnVal = digitalRead(btnPin);
+      }
+    }
+  }
+  else//Stoplights turn green and operator incoming/outgoing signal is reset
+  {
+    analogWrite(red_12, low);
+    analogWrite(green_12, high);
+    analogWrite(red_3, low);
+    analogWrite(green_3, high);
+  }  
+}
